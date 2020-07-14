@@ -25,6 +25,9 @@ M_Status M_Tuple_push(M_Tuple* const self, const M_Object* const obj);
 M_Status M_Tuple_pop(M_Tuple* const self, M_Object* const obj);
 M_Status M_Tuple_pop_copy(M_Tuple* const self, M_Object* const obj);
 
+M_Status M_Expr_drop(M_Expr* const self, size_t n);
+M_Status M_Expr_dropn(M_Expr* const self, size_t n);
+
 void M_Tuple_join(M_Tuple* const self, const M_Tuple* const other);
 M_Status M_Tuple_splice(M_Tuple* const self, const M_Tuple* const other, const size_t begin, const size_t end);
 void M_Tuple_reverse(M_Tuple* const self);

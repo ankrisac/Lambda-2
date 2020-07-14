@@ -1,32 +1,23 @@
-#include "type.h"
-
-void M_panic(const char* const msg){
-    printf("CompilerError: Unreachable situation [%s]\n", msg);
-}
-void M_panic_type(const M_Type type, const char* const msg){
-    printf("CompilerError: Unexpected type [");
-    M_Type_print(type);
-    printf("] %s\n", msg);
-}
+#include "object.h"
 
 void* M_malloc(const size_t len, size_t obj_size){
     void* ptr = malloc(len * obj_size);
     if(ptr == NULL){
-        M_panic("MemoryError: Malloc failed, insufficient memory");
+        M_PANIC("MemoryError: insufficient memory");
     }
     return ptr;
 }
 void* M_calloc(const size_t len, size_t obj_size){
     void* ptr = calloc(len, obj_size);
     if(ptr == NULL){
-        M_panic("MemoryError: Malloc failed, insufficient memory");
+        M_PANIC("MemoryError: insufficient memory");
     }
     return ptr;
 }
 void* M_realloc(void* ptr, const size_t len, size_t obj_size){
     ptr = realloc(ptr, len * obj_size);
     if(ptr == NULL){
-        M_panic("MemoryError: Realloc failed, insufficient memory");
+        M_PANIC("MemoryError: insufficient memory");
     }
     return ptr;
 }
@@ -44,7 +35,7 @@ void M_Status_print(const M_Status error){
         case M_STATUS_FILE_ERROR:       printf("File error");       break;
         
         default:
-            M_panic("in Status_print");
+            M_PANIC("in Status_print");
             break;
     }
 }
@@ -69,7 +60,7 @@ void M_Type_print(const M_Type type){
 
         case M_TYPE_TABLE:      printf("Table");    break;
         default:
-            M_panic("in Type_print");
+            M_PANIC("in Type_print");
             break;
     }
 }
@@ -77,12 +68,17 @@ void M_Keyword_print(const M_Keyword keyword){
     switch(keyword){
         case M_KEYWORD_TYPE:    printf("Type");     break;
         default:
-            M_panic("in Keyword_print");
+            M_PANIC("in Keyword_print");
             break;
     }
 }
 void M_Symbol_print(const M_Symbol* const val){
-    printf("%.*s", (int)val->data.len, val->data.data_char);
+    M_Array_print(&val->data);
+}
+void M_Symbol_repr(const M_Symbol* const val){
+    for(size_t i = 0; i < val->data.len; i++){
+        M_Char_repr(val->data.data_char[i]);
+    }
 }
 void M_Char_repr(const M_Char val){
     if(val < 32){
@@ -91,6 +87,7 @@ void M_Char_repr(const M_Char val){
             case '\t': printf("\\t"); break;
             case '\r': printf("\\r"); break;
             case '\f': printf("\\f"); break;
+            case '\b': printf("\\b"); break;
             default: printf("\\%u", val); break;
         }
     }
@@ -157,6 +154,11 @@ void M_Object_set_struct(M_Object* const self, const M_Struct val){
     self->arc = M_ARC_Object_new();
     self->arc->v_struct = val;
 }
+void M_Object_set_expr(M_Object* const self, const M_Expr val){
+    self->type = M_TYPE_EXPR;    
+    self->arc = M_ARC_Object_new();
+    self->arc->v_expr = val;
+}
 
 void M_Object_clear(M_Object* const self){
     #define ARC_CLEAR(EXPR)             \
@@ -185,9 +187,10 @@ void M_Object_clear(M_Object* const self){
         case M_TYPE_ARRAY:  ARC_CLEAR(M_Array_clear(&self->arc->v_array))   break;
         case M_TYPE_TUPLE:  ARC_CLEAR(M_Tuple_clear(&self->arc->v_tuple))   break;
         case M_TYPE_STRUCT: ARC_CLEAR(M_Struct_clear(&self->arc->v_struct)) break;
+        case M_TYPE_EXPR:   ARC_CLEAR(M_Expr_clear(&self->arc->v_expr))     break;
 
         default:
-            M_panic_type(self->type, "in Object_clear");
+            M_PANIC_TYPE(self->type, "");
             break;
     }
 }
@@ -229,9 +232,13 @@ M_Status M_Object_copy(M_Object* const self, const M_Object* const src){
             self->arc = M_ARC_Object_new();
             M_Struct_copy(&self->arc->v_struct, &src->arc->v_struct);
             break;
+        case M_TYPE_EXPR:
+            self->arc = M_ARC_Object_new();
+            M_Expr_copy(&self->arc->v_expr, &src->arc->v_expr);
+            break;
 
         default:
-            M_panic_type(self->type, "in Object_copy");
+            M_PANIC_TYPE(self->type, "");
             return M_STATUS_COMPILER_ERROR;
     }
     return M_STATUS_OK;
@@ -256,12 +263,13 @@ void M_Object_share(M_Object* const self, M_Object* const src){
         case M_TYPE_ARRAY:
         case M_TYPE_TUPLE:
         case M_TYPE_STRUCT:
+        case M_TYPE_EXPR:
             self->arc = src->arc;
             self->arc->ref_count++;
             break;
 
         default:
-            M_panic_type(self->type, "in Object_share");
+            M_PANIC_TYPE(self->type, "");
             break;
     }
 }
@@ -272,19 +280,20 @@ void M_Object_repr(const M_Object* const self){
 
         case M_TYPE_TYPE:       M_Type_print(self->v_type);                 break;
         case M_TYPE_KEYWORD:    M_Keyword_print(self->v_keyword);           break;
-        case M_TYPE_SYMBOL:     M_Symbol_print(self->v_symbol);             break;
+        case M_TYPE_SYMBOL:     M_Symbol_repr(self->v_symbol);              break;
         
         case M_TYPE_BOOL:       printf(self->v_bool ? "True" : "False");    break;
         case M_TYPE_CHAR:       M_Char_repr(self->v_char);                  break;
         case M_TYPE_INT:        printf("%lli", self->v_int);                break;
-        case M_TYPE_FLOAT:      printf("%g", self->v_float);                break;
+        case M_TYPE_FLOAT:      printf("%f", self->v_float);                break;
 
         case M_TYPE_ARRAY:      M_Array_repr(&self->arc->v_array);          break;
         case M_TYPE_TUPLE:      M_Tuple_repr(&self->arc->v_tuple);          break;
         case M_TYPE_STRUCT:     M_Struct_repr(&self->arc->v_struct);        break;
+        case M_TYPE_EXPR:       M_Expr_repr(&self->arc->v_expr);            break;
 
         default:
-            M_panic_type(self->type, "in Object_repr");
+            M_PANIC_TYPE(self->type, "");
             break;
     }
 }
@@ -300,14 +309,15 @@ void M_Object_print(const M_Object* const self){
         case M_TYPE_BOOL:       printf(self->v_bool ? "True" : "False");    break;
         case M_TYPE_CHAR:       printf("%c", self->v_char);                 break;
         case M_TYPE_INT:        printf("%lli", self->v_int);                break;
-        case M_TYPE_FLOAT:      printf("%g", self->v_float);                break;
+        case M_TYPE_FLOAT:      printf("%f", self->v_float);                break;
 
         case M_TYPE_ARRAY:      M_Array_print(&self->arc->v_array);         break;
         case M_TYPE_TUPLE:      M_Tuple_print(&self->arc->v_tuple);         break;
         case M_TYPE_STRUCT:     M_Struct_print(&self->arc->v_struct);       break;
-
+        case M_TYPE_EXPR:       M_Expr_print(&self->arc->v_expr);           break;
+        
         default:
-            M_panic_type(self->type, "in Object_print");
+            M_PANIC_TYPE(self->type, "");
             break;
     }
 }
@@ -334,9 +344,10 @@ bool M_Object_equal(const M_Object* const self, const M_Object* const src){
         case M_TYPE_ARRAY:  return M_Array_equal(&self->arc->v_array, &src->arc->v_array);
         case M_TYPE_TUPLE:  return M_Tuple_equal(&self->arc->v_tuple, &src->arc->v_tuple);
         case M_TYPE_STRUCT: return M_Struct_equal(&self->arc->v_struct, &src->arc->v_struct);
+        case M_TYPE_EXPR:   return M_Expr_equal(&self->arc->v_expr, &src->arc->v_expr);
 
         default:
-            M_panic_type(self->type, "in Object_equal");   
+            M_PANIC_TYPE(self->type, "");   
             return false;
     }
 }

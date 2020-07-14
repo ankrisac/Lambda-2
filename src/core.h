@@ -52,6 +52,8 @@ typedef enum{
     
     M_STATUS_DIVISION_BY_ZERO,
     M_STATUS_FILE_ERROR,
+
+    M_STATUS_PARSE_ERROR
 }M_Status;
 
 typedef bool M_Bool;
@@ -73,7 +75,9 @@ typedef struct M_Expr M_Expr;
 typedef struct M_ARC_Object M_ARC_Object;
 typedef struct M_GC_Object M_GC_Object;
 typedef struct M_Object M_Object;
+typedef M_Array M_Str;
 
+typedef struct M_Module_Pos M_Module_Pos;
 
 struct M_Array{
     union {
@@ -106,8 +110,10 @@ struct M_Struct{
     size_t elems;
     size_t len;
 };
-
 struct M_Expr{
+    M_Object* data;
+    M_Module_Pos* pos;
+
     size_t len;
     size_t reserve_len;
 };
@@ -121,6 +127,27 @@ typedef struct{
     size_t elems;
     size_t len;
 }M_SymbolTable;
+
+typedef struct{
+    M_Array path;
+    M_Array data;
+}M_Module;
+
+typedef struct{
+    M_SymbolTable path_list;
+
+    M_Module* modules;
+    size_t modules_len;
+    size_t modules_reserve_len;
+}M_ModuleList;
+
+struct M_Module_Pos{
+    const M_Module* module;
+    
+    size_t begin;
+    size_t end;
+    size_t line;
+};
 
 struct M_ARC_Object{
     union{
@@ -172,32 +199,27 @@ struct M_Object{
 };
 
 
-typedef struct{
-    M_Array current_dir;
-    M_SymbolTable dict_symbol;
-    M_Struct dict;
-    M_Tuple list;
-}M_ModuleList;
-
-typedef enum {
-    M_MODULE_ID,
-    M_MODULE_PATH,
-    M_MODULE_SRC,
-}M_Module_Mapping;
-
-
-void M_panic(const char* const msg);
-void M_panic_type(const M_Type type, const char* const msg);
-
 void* M_calloc(const size_t len, size_t obj_size);
 void* M_malloc(const size_t len, size_t obj_size);
 void* M_realloc(void* ptr, const size_t len, size_t obj_size);
 
+#define M_PANIC(MSG)\
+    printf("CompilerError: Unreachable situation in %s:" MSG, __func__)
 
-#include "type.h"
+#define M_PANIC_TYPE(TYPE, MSG)                 \
+    printf("CompilerError: Unexpected type ["); \
+    M_Type_print(TYPE);                         \
+    printf("] in %s:" MSG "\n", __func__);
+
+
+
+#include "object.h"
 #include "symbol.h"
 
 #include "array.h"
+#include "str.h"
+#include "expr.h"
+
 #include "tuple.h"
 #include "struct.h"
 #include "stack.h"

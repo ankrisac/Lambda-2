@@ -6,8 +6,8 @@ FLAGS := -std=c18 -Wall -Werror -pedantic -fmax-errors=5
 
 .PHONY: build
 build: $(SOURCE) $(HEADER)
-	gcc $(FLAGS) $(SOURCE) -o .bin/main
+	@gcc $(FLAGS) $(SOURCE) -o .bin/main
 
 .PHONY: debug
 debug: $(SOURCE) $(HEADER)
-	gcc -g $(FLAGS) $(SOURCE) -o .bin/debug
+	@gcc -g $(FLAGS) $(SOURCE) -o .bin/debug

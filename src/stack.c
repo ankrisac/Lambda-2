@@ -73,8 +73,8 @@ void M_Stack_push_struct(M_Stack* const self, const M_Struct val){
 }
 
 void M_Stack_push_cstr(M_Stack* const self, const char* const str){
-    M_Array str_arr;
-    M_Array_from_cstr(&str_arr, str);
+    M_Str str_arr;
+    M_Str_from_cstr(&str_arr, str);
     M_Stack_push_array(self, str_arr);
 }
 
@@ -96,7 +96,7 @@ void M_Stack_pop(M_Stack* const self, M_Object* const obj){
         M_Object_share(obj, &self->data[self->stack_ptr]);
     }
     else{
-        M_panic("in Stack_pop");
+        M_PANIC("in Stack_pop");
     }
 }
 void M_Stack_pop_copy(M_Stack* const self, M_Object* const obj){
@@ -105,7 +105,7 @@ void M_Stack_pop_copy(M_Stack* const self, M_Object* const obj){
         M_Object_share(obj, &self->data[self->stack_ptr]);
     }
     else{
-        M_panic("in Stack_pop_copy");
+        M_PANIC("in Stack_pop_copy");
     }
 }
 void M_Stack_drop(M_Stack* const self){
@@ -114,7 +114,7 @@ void M_Stack_drop(M_Stack* const self){
         M_Object_clear(&self->data[self->stack_ptr]);
     }
     else{
-        M_panic("in Stack_drop");
+        M_PANIC("in Stack_drop");
     }
 }
 void M_Stack_dropn(M_Stack* const self, const size_t n){
@@ -125,7 +125,7 @@ void M_Stack_dropn(M_Stack* const self, const size_t n){
         self->stack_ptr -= n;
     }
     else{
-        M_panic("in Stack_dropn");    
+        M_PANIC("in Stack_dropn");    
     }
 }
 void M_Stack_print(const M_Stack* const self){
@@ -706,7 +706,7 @@ M_Status M_Stack_fn_neq(M_Stack* const self, const size_t n){
             case M_TYPE_ARRAY:  val = M_Array_equal(&lhs.arc->v_array, &rhs.arc->v_array);  break;  \
             case M_TYPE_TUPLE:  val = M_Tuple_equal(&lhs.arc->v_tuple, &rhs.arc->v_tuple);  break;  \
             default:                                                                                \
-                M_panic_type(type, "in Stack_fn_lt");                                               \
+                M_PANIC_TYPE(type, "in Stack_fn_lt");                                               \
                 return M_STATUS_COMPILER_ERROR;                                                     \
         }                                                                                           \
     }                                                                                               \

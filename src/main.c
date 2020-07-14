@@ -2,33 +2,42 @@
 #include "core.h"
 #include "module.h"
 
-#include <dirent.h>
-
-
 int main(){
-    M_ModuleList self;
-    M_ModuleList_init(&self);
+    M_Str path;
+    M_Str_from_cstr(&path, "text.ul");
+
+    M_Module self;
+    M_Module_loadfile(&self, &path);
+
+    M_Module_Pos pos = M_Module_getbegin(&self);
+
+    M_SymbolTable symtable;
+    M_SymbolTable_init(&symtable);
+
+    M_Object obj = M_Module_parse_InfixExpr(&pos, &symtable);
+
+    if(obj.type != M_TYPE_ERROR){
+        printf("Parsed results: [");
+        M_Object_repr(&obj);
+        printf("]:");
+        M_Type_print(obj.type);
+        printf("\n");
+    }
+    else{
+        printf("Failed!\n");
+    }
+
+    M_Module_Pos_print(pos);
+    M_Object_clear(&obj);
+
+    
+    M_SymbolTable_clear(&symtable);
 
 
-    M_Array path;
 
-    M_Array_from_cstr(&path, "file1.txt");    
-    M_ModuleList_import(&self, &path);
+
+    M_Module_clear(&self);
     M_Array_clear(&path);
-
-    M_Array_from_cstr(&path, "file1.txt");    
-    M_ModuleList_import(&self, &path);
-    M_Array_clear(&path);
-
-
-    /*
-    M_Array_from_cstr(&path, "file2.txt");
-    M_ModuleList_import(&self, &path);
-    M_ModuleList_import(&self, &path);
-    M_Array_clear(&path);
-    */
-
-    M_ModuleList_clear(&self);
 
 
     return 0;

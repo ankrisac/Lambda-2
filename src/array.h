@@ -38,6 +38,7 @@ M_Status M_Array_set(M_Array* const self, const M_Int i, const M_Object* const o
 
 M_Status M_Array_push(M_Array* const self, const M_Object* const obj);
 M_Status M_Array_drop(M_Array* const self);
+M_Status M_Array_dropn(M_Array* const self, const size_t n);
 M_Status M_Array_pop(M_Array* const self, M_Object* const obj);
 M_Status M_Array_pop_copy(M_Array* const self, M_Object* const obj);
 

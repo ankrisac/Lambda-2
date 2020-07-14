@@ -22,7 +22,7 @@ void __M_Array_alloc(M_Array* const self, const size_t len){
             break;
 
         default:
-            M_panic_type(self->type, "in Array_alloc");
+            M_PANIC_TYPE(self->type, "in Array_alloc");
             break;
     }
     #undef ALLOC
@@ -49,7 +49,7 @@ void __M_Array_realloc(M_Array* const self, const size_t len){
             break;
 
         default:
-            M_panic_type(self->type, "in Array_realloc");
+            M_PANIC_TYPE(self->type, "in Array_realloc");
             break;
     }
     #undef REALLOC
@@ -83,7 +83,7 @@ void __M_Array_delete(M_Array* const self){
         case M_TYPE_STRUCT: { ARC_DELETE(M_Struct_clear(&arc->v_struct)) break; }
         
         default:            
-            M_panic_type(self->type, "in Array_delete");
+            M_PANIC_TYPE(self->type, "in Array_delete");
             break;
     }
     #undef ARC_DELETE
@@ -103,13 +103,6 @@ M_Array M_Array_new(const M_Type type, const size_t len){
     M_Array self;
     M_Array_init(&self, type, len);
     return self;
-}
-
-void M_Array_from_cstr(M_Array* const self, const char* const str){
-    size_t len = strlen(str);
-    M_Array_init(self, M_TYPE_CHAR, len);    
-    memcpy(self->data_char, str, len); 
-    self->len = len;
 }
 
 void M_Array_clear(M_Array* const self){
@@ -154,7 +147,7 @@ void M_Array_copy(M_Array* const self, const M_Array* const src){
             break;
 
         default:
-            M_panic_type(self->type, "in Array_copy");
+            M_PANIC_TYPE(self->type, "in Array_copy");
             break;
     }
     #undef COPY
@@ -248,7 +241,7 @@ void M_Array_print(const M_Array* const self){
             break;
         
         default:
-            M_panic_type(self->type, "in Array_print");
+            M_PANIC_TYPE(self->type, "in Array_print");
             break;
     }
 }
@@ -333,7 +326,7 @@ void M_Array_repr(const M_Array* const self){
             break;
         
         default:
-            M_panic_type(self->type, "in Array_print");
+            M_PANIC_TYPE(self->type, "in Array_print");
             break;
     }
 }
@@ -406,7 +399,7 @@ M_Status M_Array_get(M_Array* const self, const M_Int i, M_Object* const obj){
             obj->arc->ref_count++;
 
         default:
-            M_panic_type(self->type, "in Array_arrget");
+            M_PANIC_TYPE(self->type, "in Array_arrget");
             return M_STATUS_COMPILER_ERROR;
     }
     return M_STATUS_OK;
@@ -439,7 +432,7 @@ M_Status M_Array_set(M_Array* const self, const M_Int i, const M_Object* const o
             break;
 
         default:
-            M_panic_type(self->type, "in Array_arrget");
+            M_PANIC_TYPE(self->type, "in Array_arrget");
             return M_STATUS_COMPILER_ERROR;
     }
     return M_STATUS_OK;
@@ -493,7 +486,7 @@ M_Status M_Array_pop(M_Array* const self, M_Object* const obj){
             break;
 
         default:
-            M_panic_type(self->type, "in Array_pop");
+            M_PANIC_TYPE(self->type, "in Array_pop");
             return M_STATUS_COMPILER_ERROR;
     }   
 
@@ -531,9 +524,51 @@ M_Status M_Array_drop(M_Array* const self){
         case M_TYPE_STRUCT: { ARC_DELETE(M_Struct_clear(&arc->v_struct)) break; }
         
         default:
-            M_panic_type(self->type, "in Array_pop");
+            M_PANIC_TYPE(self->type, "in Array_pop");
             return M_STATUS_COMPILER_ERROR;
     }   
+    #undef ARC_DELETE
+
+    return M_STATUS_OK;
+}
+M_Status M_Array_dropn(M_Array* const self, const size_t n){
+    if(self->len < n){
+        return M_STATUS_OUT_OF_RANGE;
+    }
+
+    #define ARC_DELETE(DELETER)                                 \
+        for(size_t i = 0; i < n; i++){                          \
+            M_ARC_Object* arc = self->data_arc[self->len + i];  \
+            if(arc->ref_count == 1){                            \
+                DELETER;                                        \
+                free(arc);                                      \
+            }                                                   \
+            else{                                               \
+                arc->ref_count--;                               \
+            }                                                   \
+        }
+
+    self->len -= n;
+    switch(self->type){
+        case M_TYPE_TYPE:     
+        case M_TYPE_KEYWORD:    
+        case M_TYPE_SYMBOL:     
+
+        case M_TYPE_BOOL:
+        case M_TYPE_CHAR: 
+        case M_TYPE_INT: 
+        case M_TYPE_FLOAT:
+            break;
+
+        case M_TYPE_ARRAY: { ARC_DELETE(M_Array_clear(&arc->v_array)) break; }
+        case M_TYPE_TUPLE: { ARC_DELETE(M_Tuple_clear(&arc->v_tuple)) break; }
+        case M_TYPE_STRUCT: { ARC_DELETE(M_Struct_clear(&arc->v_struct)) break; }
+        
+        default:
+            M_PANIC_TYPE(self->type, "in Array_pop");
+            return M_STATUS_COMPILER_ERROR;
+    }   
+
     #undef ARC_DELETE
 
     return M_STATUS_OK;
@@ -565,7 +600,7 @@ M_Status M_Array_pop_copy(M_Array* const self, M_Object* const obj){
             break;
 
         default:
-            M_panic_type(self->type, "in Array_pop");
+            M_PANIC_TYPE(self->type, "in Array_pop");
             return M_STATUS_COMPILER_ERROR;
     }   
     return M_STATUS_OK;
@@ -608,7 +643,7 @@ M_Status M_Array_join(M_Array* const self, const M_Array* const other){
             break;
         
         default:
-            M_panic_type(self->type, "in Array_concat");
+            M_PANIC_TYPE(self->type, "in Array_concat");
             return M_STATUS_COMPILER_ERROR;
     }
 
@@ -666,7 +701,7 @@ M_Status M_Array_splice(M_Array* const self, const M_Array* const other, const M
             break;
 
         default:
-            M_panic_type(self->type, "in Array_splice");
+            M_PANIC_TYPE(self->type, "in Array_splice");
             break;
     }
     #undef SPLICE
@@ -704,7 +739,7 @@ short M_Array_compare(const M_Array* const self, const M_Array* const other){
             break;
         
         default:
-            M_panic_type(self->type, "in Array_compare");
+            M_PANIC_TYPE(self->type, "in Array_compare");
             break;
     }
 
@@ -756,7 +791,7 @@ bool M_Array_equal(const M_Array* const self, const M_Array* const other){
             }
             return true;
         default:
-            M_panic_type(self->type, "in Array_equal");
+            M_PANIC_TYPE(self->type, "in Array_equal");
             return false;
     }
 
@@ -792,7 +827,7 @@ void M_Array_reverse(M_Array* const self){
         }
 
         default:
-            M_panic_type(self->type, "in Array_reverse");
+            M_PANIC_TYPE(self->type, "in Array_reverse");
             break;
     }
 

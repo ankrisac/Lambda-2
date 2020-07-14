@@ -54,7 +54,7 @@ void M_Tuple_print(const M_Tuple* const self){
             M_Object_repr(&self->data[i]);
             printf(", ");
         }
-        M_Object_print(&self->data[self->len - 1]);
+        M_Object_repr(&self->data[self->len - 1]);
     }
     printf("]");
 }
@@ -122,6 +122,27 @@ M_Status M_Tuple_pop_copy(M_Tuple* const self, M_Object* const obj){
 
     self->len--;
     M_Object_copy(obj, &self->data[self->len]);    
+    return M_STATUS_OK;
+}
+
+M_Status M_Tuple_drop(M_Tuple* const self, size_t n){
+    if(self->len > 0){
+        return M_STATUS_OUT_OF_RANGE;
+    }
+
+    self->len--;    
+    M_Object_clear(&self->data[self->len]);
+    return M_STATUS_OK;
+}
+M_Status M_Tuple_dropn(M_Tuple* const self, size_t n){
+    if(self->len < n){
+        return M_STATUS_OUT_OF_RANGE;
+    }
+
+    self->len -= n;    
+    for(size_t i = 0; i < n; i++){                          
+        M_Object_clear(&self->data[self->len + i]);
+    }
     return M_STATUS_OK;
 }
 

@@ -75,7 +75,7 @@ void M_Symbol_GTable_resize(M_SymbolTable* const self, size_t len){
 
 const M_Symbol* M_Symbol_new(M_SymbolTable* const self, const M_Array* const str){
     if(str->type != M_TYPE_CHAR){
-        M_panic_type(str->type, "in Symbol_new");
+        M_PANIC_TYPE(str->type, "in Symbol_new");
     }
 
     if(3 * self->elems >= 2 * self->len){
@@ -95,8 +95,8 @@ const M_Symbol* M_Symbol_new(M_SymbolTable* const self, const M_Array* const str
     return self->keys[index];
 }
 const M_Symbol* M_Symbol_from_cstr(M_SymbolTable* const self, const char* const str){
-    M_Array str_arr;
-    M_Array_from_cstr(&str_arr, str);
+    M_Str str_arr;
+    M_Str_from_cstr(&str_arr, str);
     
     const M_Symbol* sym = M_Symbol_new(self, &str_arr);
     M_Array_clear(&str_arr);
