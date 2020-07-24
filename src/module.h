@@ -22,12 +22,16 @@ M_Object M_Module_parse_Number(M_Module_Pos* const pos);
 
 M_Object M_Module_parse_Operator(M_Module_Pos* const pos, M_SymbolTable* const table);
 M_Object M_Module_parse_Symbol(M_Module_Pos* const pos, M_SymbolTable* const table);
-M_Object M_Module_parse_String(M_Module_Pos* const pos, M_SymbolTable* const table);
-M_Object M_Module_parse_Var(M_Module_Pos* const pos, M_SymbolTable* const table);
+M_Object M_Module_parse_String(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace);
+M_Object M_Module_parse_Atom(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace);
 
-M_Object M_Module_parse_FuncExpr(M_Module_Pos* const pos, M_SymbolTable* const table);
-M_Object M_Module_parse_InfixExpr(M_Module_Pos* const pos, M_SymbolTable* const table);
+M_Object M_Module_parse_FuncExpr(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace);
+M_Object M_Module_parse_InfixExpr(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace);
 
+M_Object M_Module_parse_TupleExpr(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace);
+M_Object M_Module_parse_ListExpr(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace);
+M_Object M_Module_parse_BlockExpr(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace);
+M_Object M_Module_parse_ScopeExpr(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace);
 
 void M_ModuleList_init(M_ModuleList* const self);
 void M_ModuleList_clear(M_ModuleList* const self);

@@ -57,10 +57,9 @@ void M_Type_print(const M_Type type){
         case M_TYPE_ARRAY:      printf("Array");    break;
         case M_TYPE_TUPLE:      printf("Tuple");    break;
         case M_TYPE_STRUCT:     printf("Struct");   break;
-
         case M_TYPE_TABLE:      printf("Table");    break;
         default:
-            M_PANIC("in Type_print");
+            M_PANIC();
             break;
     }
 }

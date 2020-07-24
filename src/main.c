@@ -11,10 +11,13 @@ int main(){
 
     M_Module_Pos pos = M_Module_getbegin(&self);
 
+    M_ErrorStack errstack;
+    M_ErrorStack_init(&errstack);
+
     M_SymbolTable symtable;
     M_SymbolTable_init(&symtable);
 
-    M_Object obj = M_Module_parse_InfixExpr(&pos, &symtable);
+    M_Object obj = M_Module_parse_Atom(&pos, &symtable, &errstack);
 
     if(obj.type != M_TYPE_ERROR){
         printf("Parsed results: [");
@@ -22,19 +25,18 @@ int main(){
         printf("]:");
         M_Type_print(obj.type);
         printf("\n");
-    }
-    else{
-        printf("Failed!\n");
-    }
 
-    M_Module_Pos_print(pos);
+        M_Array outln = M_Module_Pos_print(pos);
+        M_Array_print(&outln);
+        M_Array_clear(&outln);
+    }
+    printf("Parsing Error: \n");
+    M_ErrorStack_print(&errstack);
+
     M_Object_clear(&obj);
 
-    
     M_SymbolTable_clear(&symtable);
-
-
-
+    M_ErrorStack_clear(&errstack);
 
     M_Module_clear(&self);
     M_Array_clear(&path);

@@ -7,5 +7,7 @@ case $1 in
     run)
         make build && ./.bin/main
     ;;
-
+    debug)
+        make debug
+    ;;
 esac

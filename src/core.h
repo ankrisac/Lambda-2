@@ -129,6 +129,10 @@ typedef struct{
 }M_SymbolTable;
 
 typedef struct{
+    M_Array error_stack;
+}M_ErrorStack;
+
+typedef struct{
     M_Array path;
     M_Array data;
 }M_Module;
@@ -148,6 +152,10 @@ struct M_Module_Pos{
     size_t end;
     size_t line;
 };
+
+typedef struct {
+    M_SymbolTable table;
+}M_Parser;
 
 struct M_ARC_Object{
     union{
@@ -225,4 +233,5 @@ void* M_realloc(void* ptr, const size_t len, size_t obj_size);
 #include "stack.h"
 
 #include "io.h"
+#include "error.h"
 #include "module.h"

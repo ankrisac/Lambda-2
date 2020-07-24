@@ -60,13 +60,16 @@ size_t __M_Symbol_GTable_index_symbol(M_Symbol** const keys, const size_t key_le
         perturb >>= 5;
         index = j % key_len;
     }
+
     return index;
 }
 void M_Symbol_GTable_resize(M_SymbolTable* const self, size_t len){
     M_Symbol** new_keys = M_calloc(len, sizeof* new_keys);
 
     for(size_t i = 0; i < self->len; i++){
-        new_keys[__M_Symbol_GTable_index_symbol(new_keys, len, self->keys[i])] = self->keys[i];
+        if(self->keys[i] != NULL){
+            new_keys[__M_Symbol_GTable_index_symbol(new_keys, len, self->keys[i])] = self->keys[i];
+        }
     }
     free(self->keys);
     self->keys = new_keys;

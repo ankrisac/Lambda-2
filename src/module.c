@@ -1,5 +1,8 @@
 #include "module.h"
 
+#define M_RESET "\033[0m"
+#define M_COLOR "\033[31m\033[1m\033[4m"
+
 bool M_Module_Pos_equal(const M_Module_Pos* const self, const M_Module_Pos* const other){
     return self == other || 
         (self->module == other->module
@@ -11,7 +14,9 @@ void M_Module_loadfile(M_Module* const self, const M_Array* const path){
     M_Array_copy(&self->path, path);
 
     if(M_FileIO_loadfile(&self->path, &self->data) != M_STATUS_OK){
-        printf("Failed to load file\n");
+        printf("Failed to load file: [");
+        M_Array_print(path);
+        printf("]\n");
     }
 }
 void M_Module_clear(M_Module* const self){
@@ -34,13 +39,10 @@ M_Module_Pos M_Module_getbegin(const M_Module* const self){
 M_Str M_Module_Pos_print(const M_Module_Pos mpos){
     //pos is not validated
 
-    #define RESET "\033[0m"
-    #define COLOR "\033[31m\033[1m\033[4m"
-
     M_Str outln;
     M_Str_from_cstr(&outln, "in \033[03m'");
     M_Str_join(&outln, &mpos.module->path);
-    M_Str_join_cstr(&outln, RESET "':\n");
+    M_Str_join_cstr(&outln, M_RESET "':\n");
 
     size_t begin = mpos.begin;
     size_t end = mpos.end;
@@ -69,33 +71,32 @@ M_Str M_Module_Pos_print(const M_Module_Pos mpos){
             line--;
         }
     }
-
+    
+    M_Str_push(&outln, ' ');
     M_Str_join_int(&outln, line);
-    M_Str_join_cstr(&outln, " | " COLOR);
+    M_Str_join_cstr(&outln, " | " M_COLOR);
     for(size_t i = begin; i < mpos.begin; i++){
         M_Str_push(&outln, data[i]);
     }
 
     for(size_t i = mpos.begin; i < mpos.end; i++){
         if(data[i] == '\n'){
-            line++;
-            M_Str_join_cstr(&outln, RESET "\n");
+            line++;   
+            M_Str_join_cstr(&outln, M_RESET "\n");
+            M_Str_push(&outln, ' ');
             M_Str_join_int(&outln, line);
-            M_Str_join_cstr(&outln, " | " COLOR);
+            M_Str_join_cstr(&outln, " | " M_COLOR);
         }
         else{
             M_Str_push(&outln, data[i]);
         }
     }
 
-    M_Str_join_cstr(&outln, RESET);
+    M_Str_join_cstr(&outln, M_RESET);
     for(size_t i = mpos.end; i < end; i++){
         M_Str_push(&outln, data[i]);
     }
     M_Str_push(&outln, '\n');
-
-    M_Array_print(&outln);
-    M_Array_clear(&outln);
     return outln;
 }
 
@@ -161,7 +162,7 @@ void M_Module_Pos_advance(M_Module_Pos* const pos, const M_Module_Pos* const src
     case '"':   case '#':
 
 #define CASE_SYNTAX         \
-    case ';':               \
+    case ';':   case ',':   \
     case '(':   case ')':   \
     case '[':   case ']':   \
     case '{':   case '}':
@@ -318,7 +319,7 @@ M_Object M_Module_parse_Symbol(M_Module_Pos* const pos, M_SymbolTable* const tab
     return out;
 }
 
-M_Object M_Module_parse_String(M_Module_Pos* const pos, M_SymbolTable* const table){
+M_Object M_Module_parse_String(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace){
     M_Object out = (M_Object){ 
         .type = M_TYPE_ERROR, 
         .v_error = M_STATUS_PARSE_ERROR 
@@ -369,21 +370,14 @@ M_Object M_Module_parse_String(M_Module_Pos* const pos, M_SymbolTable* const tab
 
                     M_Expr expr;
                     M_Expr_init(&expr, 2);
-                    M_Expr_push(&expr, 
-                        &(M_Object){ 
-                            .type = M_TYPE_SYMBOL,
-                            .v_symbol = M_Symbol_from_cstr(table, "str")
-                        },
-                        pos
-                    );
-                    M_Expr_push(&expr, 
-                        &(M_Object){ 
-                            .type = M_TYPE_SYMBOL,
-                            .v_symbol = M_Symbol_new(table, &str)
-                        },
-                        pos
-                    );
+
+                    M_Object header, data;
+                    M_Object_set_symbol(&header, M_Symbol_from_cstr(table, "str"));
+                    M_Object_set_symbol(&data, M_Symbol_new(table, &str));
                     M_Array_clear(&str);
+
+                    M_Expr_push(&expr, &header, pos);
+                    M_Expr_push(&expr, &data, pos);
                     
                     M_Object_set_expr(&out, expr);
                     return out;
@@ -416,39 +410,62 @@ M_Object M_Module_parse_String(M_Module_Pos* const pos, M_SymbolTable* const tab
         }
     } while(M_Module_Pos_next(pos));        
      
+    M_Str error;
+    M_Str_from_cstr(&error, "Expected closing delimiter " M_COLOR "\"");
+    for(size_t i = 0; i < escape_count; i++){
+        M_Str_push(&error, '#');
+    }
+    M_Str_join_cstr(&error, M_RESET " of " M_COLOR "string" M_RESET);
+
+    M_ErrorStack_pushLocStrMsg(err_trace, pos, error);
     M_Array_clear(&str);    
     return out;
 }
-M_Object M_Module_parse_Var(M_Module_Pos* const pos, M_SymbolTable* const table){
-    switch(M_Module_Pos_peek(pos)){
-        CASE_NUM {
-            return M_Module_parse_Number(pos);
-        }
-        CASE_SPACE
+M_Object M_Module_parse_Atom(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace){
+    char chr = M_Module_Pos_peek(pos);
+    switch(chr){
+        CASE_NUM return M_Module_parse_Number(pos);
         CASE_OPERATOR 
-        CASE_SYNTAX {
             break;
-        }
+        CASE_SPACE
+            M_ErrorStack_pushLocMsg(err_trace, pos, "Expected " M_COLOR "Atom" M_RESET);
+            break;
         case 'r':
         case 'R':
             switch(M_Module_Pos_peekahead(pos, 1)){
                 case '#':
-                case '"':{
-                    return M_Module_parse_String(pos, table);
-                }
-                default:{
-                    return M_Module_parse_Symbol(pos, table);
-                }
+                case '"': return M_Module_parse_String(pos, table, err_trace);
+                default: return M_Module_parse_Symbol(pos, table);
             }
             break;
         case '#':
-        case '"':{
-            return M_Module_parse_String(pos, table);
+        case '"': return M_Module_parse_String(pos, table, err_trace);
+
+        case '(': return M_Module_parse_TupleExpr(pos, table, err_trace);
+        case '[': return M_Module_parse_ListExpr(pos, table, err_trace);
+        case '{': return M_Module_parse_ScopeExpr(pos, table, err_trace);
+        
+        case ')':
+        case ']':
+        case '}':
+        case ';':{
+            M_Str msg;
+            M_Str_from_cstr(&msg, "Expected " M_COLOR "Atom" M_RESET);
+            M_Str_push(&msg, chr);
+
+            M_ErrorStack_pushLocStrMsg(err_trace, pos, msg);
+            return (M_Object){
+                .type = M_TYPE_ERROR,
+                .v_error = M_STATUS_PARSE_ERROR
+            };
         }
-        default:{
-            return M_Module_parse_Symbol(pos, table);
-            break;
-        }
+        case '\0':
+            M_ErrorStack_pushLocMsg(err_trace, pos, "Expected " M_COLOR "Atom" M_RESET ", not end of file");
+            return (M_Object){
+                .type = M_TYPE_ERROR,
+                .v_error = M_STATUS_PARSE_ERROR
+            };
+        default: return M_Module_parse_Symbol(pos, table);
     }
     return (M_Object){ 
         .type = M_TYPE_ERROR, 
@@ -469,9 +486,9 @@ void M_Module_parse_Space(M_Module_Pos* const pos){
         break;
     }
 }
-M_Object M_Module_parse_FuncExpr(M_Module_Pos* const pos, M_SymbolTable* const table){
+M_Object M_Module_parse_FuncExpr(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace){
     M_Module_Pos iter = *pos;
-    M_Object head = M_Module_parse_Var(&iter, table);
+    M_Object head = M_Module_parse_Atom(&iter, table, err_trace);
     
     if(head.type == M_TYPE_ERROR){
         return head;
@@ -480,15 +497,12 @@ M_Object M_Module_parse_FuncExpr(M_Module_Pos* const pos, M_SymbolTable* const t
     M_Expr f_expr;
     M_Expr_init(&f_expr, 2);
     M_Expr_push(&f_expr, &head, &iter);
-
-    M_Module_parse_Space(&iter);
     
     while(true){
         M_Module_parse_Space(&iter);
         iter.begin = iter.end;
 
-        M_Object tail = M_Module_parse_Var(&iter, table);
-
+        M_Object tail = M_Module_parse_Atom(&iter, table, err_trace);
         if(tail.type == M_TYPE_ERROR){
             break;
         }
@@ -496,9 +510,10 @@ M_Object M_Module_parse_FuncExpr(M_Module_Pos* const pos, M_SymbolTable* const t
         M_Expr_push(&f_expr, &tail, &iter);
     }
 
-
     M_Module_Pos_advance(pos, &iter);
     if(f_expr.len == 1){
+        head = f_expr.data[0];
+        f_expr.len--;
         M_Expr_clear(&f_expr);
         return head;
     }
@@ -507,29 +522,26 @@ M_Object M_Module_parse_FuncExpr(M_Module_Pos* const pos, M_SymbolTable* const t
     M_Object_set_expr(&f_obj, f_expr);
     return f_obj;
 }
-M_Object M_Module_parse_InfixExpr(M_Module_Pos* const pos, M_SymbolTable* const table){
+M_Object M_Module_parse_InfixExpr(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace){
     M_Module_Pos iter = *pos;
     M_Object out = (M_Object){
         .type = M_TYPE_ERROR,
         .v_error = M_STATUS_PARSE_ERROR
     };
-
     M_Expr expr;
     M_Expr_init(&expr, 2);
-    M_Expr_push(&expr, 
-        &(M_Object){
-            .type = M_TYPE_SYMBOL,
-            .v_symbol = M_Symbol_from_cstr(table, "infix")
-        },
-        &iter
-    );
+
+    M_Object head;
+    M_Object_set_symbol(&head, M_Symbol_from_cstr(table, "infix"));
+    M_Expr_push(&expr, &head, &iter);
 
     M_Object atom;
     M_Object op;
     while(true){
         M_Module_parse_Space(&iter);
+        iter.begin = iter.end;
 
-        atom = M_Module_parse_FuncExpr(&iter, table);
+        atom = M_Module_parse_FuncExpr(&iter, table, err_trace);
         if(atom.type == M_TYPE_ERROR){
             op = M_Module_parse_Operator(&iter, table);        
             if(op.type == M_TYPE_ERROR){
@@ -543,13 +555,191 @@ M_Object M_Module_parse_InfixExpr(M_Module_Pos* const pos, M_SymbolTable* const 
     }
 
     M_Module_Pos_advance(pos, &iter);
-    if(expr.len == 2){
-        out = expr.data[1];
-        M_Expr_clear(&expr);
-        return out;
+    switch(expr.len){
+        case 2:
+            out = expr.data[1];
+            expr.len--;
+            M_Expr_clear(&expr);
+            return out;
+        case 1:
+            M_Expr_clear(&expr);
+            return out;
+        default:
+            break;
     }
     M_Object_set_expr(&out, expr);
 
+    return out;
+}
+M_Object M_Module_parse_TupleExpr(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace){
+    M_Module_Pos iter = *pos;
+    M_Object out = (M_Object){
+        .type = M_TYPE_ERROR,
+        .v_error = M_STATUS_PARSE_ERROR
+    };
+    
+    if(M_Module_Pos_peek(&iter) != '('){
+        M_ErrorStack_pushLocMsg(err_trace, pos, "Expected beginning paren " M_COLOR "(" M_RESET " of tuple");
+        return out;
+    }
+    M_Module_Pos_next(&iter);
+    iter.begin = iter.end;
+
+    M_Expr expr;
+    M_Expr_init(&expr, 2);
+    
+    M_Object head = M_Module_parse_InfixExpr(&iter, table, err_trace);
+    M_Expr_push(&expr, &head, &iter);
+
+    while(true){
+        switch(M_Module_Pos_peek(&iter)){
+            case ',':{
+                M_Module_Pos_next(&iter);
+                M_Module_parse_Space(&iter);
+                iter.begin = iter.end;
+
+                M_Object tail = M_Module_parse_InfixExpr(&iter, table, err_trace);
+                if(tail.type == M_TYPE_ERROR){
+                    M_Expr_clear(&expr);
+                    M_Module_Pos_advance(pos, &iter);
+                    return out;
+                }
+                M_Expr_push(&expr, &tail, &iter);
+                break;
+            }
+            case ')': {
+                M_Module_Pos_next(&iter);
+                M_Module_Pos_advance(pos, &iter);
+                if(expr.len == 1){
+                    out = expr.data[0];
+                    expr.len--;
+                    M_Expr_clear(&expr);
+                    return out;
+                }
+                M_Object_set_expr(&out, expr);
+                return out;
+            }
+            default:  
+                M_Expr_clear(&expr);
+                M_ErrorStack_pushLocMsg(err_trace, pos, "Expected ending paren ')' of tuple");
+                M_Module_Pos_advance(pos, &iter);
+                return out;
+        }
+    }
+    return out;
+}
+M_Object M_Module_parse_ListExpr(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace){
+    M_Module_Pos iter = *pos;
+    M_Object out = (M_Object){
+        .type = M_TYPE_ERROR,
+        .v_error = M_STATUS_PARSE_ERROR
+    };
+    
+    if(M_Module_Pos_peek(&iter) != '['){
+        M_ErrorStack_pushLocMsg(err_trace, pos, "Expected beginning " M_COLOR "[" M_RESET " of tuple");
+        return out;
+    }
+    M_Module_Pos_next(&iter);
+    iter.begin = iter.end;
+
+    M_Expr expr;
+    M_Expr_init(&expr, 2);
+    
+    M_Object head = M_Module_parse_InfixExpr(&iter, table, err_trace);
+    M_Expr_push(&expr, &head, &iter);
+
+    while(true){
+        switch(M_Module_Pos_peek(&iter)){
+            case ',': {    
+                M_Module_Pos_next(&iter);
+                M_Module_parse_Space(&iter);
+                iter.begin = iter.end;
+
+                M_Object tail = M_Module_parse_InfixExpr(&iter, table, err_trace);
+                if(tail.type == M_TYPE_ERROR){
+                    M_Expr_clear(&expr);
+                    M_Module_Pos_advance(pos, &iter);
+                    M_ErrorStack_pushLocMsg(err_trace, pos, "Expected element!");
+                    return out;
+                }
+                M_Expr_push(&expr, &tail, &iter);
+                break;
+            }
+            case ']': {
+                M_Module_Pos_next(&iter);
+                M_Module_Pos_advance(pos, &iter);
+                M_Object_set_expr(&out, expr);
+                return out;
+            }
+            default:
+                M_Expr_clear(&expr);
+                M_Module_Pos_advance(pos, &iter);
+                M_ErrorStack_pushLocMsg(err_trace, pos, "Expected " M_COLOR "[" M_RESET " or , in tuple!");
+                return out;
+        }
+    }
+}
+M_Object M_Module_parse_BlockExpr(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace){
+    M_Module_Pos iter = *pos;
+    M_Object out = (M_Object){
+        .type = M_TYPE_ERROR,
+        .v_error = M_STATUS_PARSE_ERROR
+    };
+
+    M_Expr expr;
+    M_Expr_init(&expr, 2);
+
+    while(true){
+        iter.begin = iter.end;
+        
+        M_Object tail = M_Module_parse_InfixExpr(&iter, table, err_trace);
+        if(tail.type == M_TYPE_ERROR){
+            break;
+        }
+        M_Expr_push(&expr, &tail, &iter);
+
+        if(M_Module_Pos_peek(&iter) == ';'){
+            M_Module_Pos_next(&iter);   
+        }
+        else{
+            M_Expr_clear(&expr);
+            M_ErrorStack_pushLocMsg(err_trace, &iter, "Expected terminator {;} :");
+            return out;
+        }
+    }
+
+    M_Module_Pos_advance(pos, &iter);
+    M_Object_set_expr(&out, expr);
+    return out;
+}
+M_Object M_Module_parse_ScopeExpr(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace){
+    M_Module_Pos iter = *pos;
+    M_Object out = (M_Object){
+        .type = M_TYPE_ERROR,
+        .v_error = M_STATUS_PARSE_ERROR
+    };
+    
+    if(M_Module_Pos_peek(&iter) != '{'){
+        return out;
+    }
+    M_Module_Pos_next(&iter);
+    iter.begin = iter.end;
+
+    M_Module_parse_Space(&iter);
+    out = M_Module_parse_BlockExpr(&iter, table, err_trace);    
+    if(out.type == M_TYPE_ERROR){
+        return out;
+    }
+    M_Module_parse_Space(&iter);
+
+    if(M_Module_Pos_peek(&iter) != '}'){
+        M_Object_clear(&out);
+        M_Object_set_error(&out, M_STATUS_PARSE_ERROR);
+        M_Module_Pos_advance(pos, &iter);
+        return out;
+    }
+    M_Module_Pos_next(&iter);
+    M_Module_Pos_advance(pos, &iter);
     return out;
 }
 
