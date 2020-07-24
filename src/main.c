@@ -17,7 +17,7 @@ int main(){
     M_SymbolTable symtable;
     M_SymbolTable_init(&symtable);
 
-    M_Object obj = M_Module_parse_Atom(&pos, &symtable, &errstack);
+    M_Object obj = M_Module_parse_File(&pos, &symtable, &errstack);
 
     if(obj.type != M_TYPE_ERROR){
         printf("Parsed results: [");
@@ -26,11 +26,9 @@ int main(){
         M_Type_print(obj.type);
         printf("\n");
 
-        M_Array outln = M_Module_Pos_print(pos);
-        M_Array_print(&outln);
-        M_Array_clear(&outln);
+        M_Module_Pos_print(pos);
     }
-    printf("Parsing Error: \n");
+    printf("Errors: \n");
     M_ErrorStack_print(&errstack);
 
     M_Object_clear(&obj);
@@ -40,7 +38,6 @@ int main(){
 
     M_Module_clear(&self);
     M_Array_clear(&path);
-
 
     return 0;
 }

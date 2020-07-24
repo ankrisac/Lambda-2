@@ -9,8 +9,8 @@ void M_Module_clear(M_Module* const self);
 void M_Module_print(M_Module* const self);
 M_Module_Pos M_Module_getbegin(const M_Module* const self);
 
-
-M_Str M_Module_Pos_print(const M_Module_Pos mpos);
+M_Str M_Module_Pos_to_str(const M_Module_Pos mpos);
+void M_Module_Pos_print(const M_Module_Pos mpos);
 
 char M_Module_Pos_peek(const M_Module_Pos* const pos);
 char M_Module_Pos_pop(M_Module_Pos* const pos);
@@ -31,7 +31,7 @@ M_Object M_Module_parse_InfixExpr(M_Module_Pos* const pos, M_SymbolTable* const 
 M_Object M_Module_parse_TupleExpr(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace);
 M_Object M_Module_parse_ListExpr(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace);
 M_Object M_Module_parse_BlockExpr(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace);
-M_Object M_Module_parse_ScopeExpr(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace);
+M_Object M_Module_parse_File(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace);
 
 void M_ModuleList_init(M_ModuleList* const self);
 void M_ModuleList_clear(M_ModuleList* const self);
