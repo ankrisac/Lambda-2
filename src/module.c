@@ -380,7 +380,9 @@ M_Object M_Module_parse_String(M_Module_Pos* const pos, M_SymbolTable* const tab
                     M_Object_set_symbol(&data, M_Symbol_new(table, &str));
                     M_Array_clear(&str);
 
-                    M_Expr_push(&expr, &header, pos);
+                    M_Module_Pos header_pos = *pos;
+                    header_pos.begin = header_pos.end = pos->begin;
+                    M_Expr_push(&expr, &header, &header_pos);
                     M_Expr_push(&expr, &data, pos);
                     
                     M_Object_set_expr(&out, expr);
@@ -434,6 +436,7 @@ M_Object M_Module_parse_Atom(M_Module_Pos* const pos, M_SymbolTable* const table
         CASE_SPACE
             M_ErrorStack_pushLocMsg(err_trace, *pos, "Expected " M_COLOR "Atom" M_RESET);
             break;
+
         case 'r':
         case 'R':
             switch(M_Module_Pos_peekahead(pos, 1)){
@@ -879,10 +882,7 @@ M_Object M_Module_parse_BlockExpr(M_Module_Pos* const pos, M_SymbolTable* const 
 }
 M_Object M_Module_parse_File(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace){
     M_Module_Pos iter = *pos;
-    M_Object out = (M_Object){
-        .type = M_TYPE_ERROR,
-        .v_error = M_STATUS_PARSE_ERROR
-    };
+    M_Object out;
     
     iter.begin = iter.end;
 
@@ -909,9 +909,10 @@ M_Object M_Module_parse_File(M_Module_Pos* const pos, M_SymbolTable* const table
                             synchronized = true;
                             break;
                         case '\0':
-                            M_Expr_clear(&expr);
                             M_ErrorStack_pushLocMsg(err_trace, *pos, 
-                                "Expected terminator " M_COLOR ";" M_RESET);
+                                "Expected terminator " M_COLOR ";" M_RESET);                            
+                            M_Module_Pos_advance(pos, &iter);
+                            M_Object_set_expr(&out, expr);
                             return out;
                         default: 
                             M_Module_Pos_next(&iter);
@@ -928,11 +929,12 @@ M_Object M_Module_parse_File(M_Module_Pos* const pos, M_SymbolTable* const table
                 M_Module_Pos_next(&iter);
                 break;
             default: 
-                M_Expr_clear(&expr);
                 M_ErrorStack_pushLocMsg(err_trace, iter, 
                     "Expected terminator " M_COLOR ";" M_RESET
                     " after " M_COLOR "expr" M_RESET
-                    " in " M_COLOR "block" M_RESET);                
+                    " in " M_COLOR "block" M_RESET);
+                M_Module_Pos_advance(pos, &iter);
+                M_Object_set_expr(&out, expr);
                 return out;
         }
     }
