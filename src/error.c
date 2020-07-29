@@ -33,6 +33,18 @@ void M_ErrorStack_print(const M_ErrorStack* const self){
         M_Array_print(&self->error_stack.data_arc[i]->v_array);   
     }
 }
+M_Str M_ErrorStack_toStr(const M_ErrorStack* const self){
+    M_Str out;
+    M_Array_init(&out, M_TYPE_CHAR, 16);
+
+    for(size_t i = 0; i < self->error_stack.len; i++){
+        M_Str_push(&out, '[');
+        M_Str_join_int(&out, i);
+        M_Str_join_cstr(&out, "]: ");
+        M_Str_join(&out, &self->error_stack.data_arc[i]->v_array);
+    }
+    return out;
+}
 void M_ErrorStack_pushLocMsg(M_ErrorStack* const self, const M_Module_Pos pos, const char* msg){
     M_Str err, loc = M_Module_Pos_to_str(pos);
     M_Str_from_cstr(&err, msg);

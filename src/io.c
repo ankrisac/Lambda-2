@@ -1,5 +1,9 @@
 #include "io.h"
 
+#ifdef __linux__
+#include "unistd.h"
+#include <linux/limits.h>
+
 void M_IO_cin(M_Array* const input){
     size_t buff_len = 16;
     char* buff = M_malloc(buff_len, sizeof* buff);
@@ -84,3 +88,25 @@ void M_File_join_path(M_Array* const output, const M_Array* const parent, const 
     __M_Array_push_Char(output, '/');
     M_Array_join(output, child);
 }
+
+#else
+#warning NON LINUX IO FUNCTIONS ARE PLACEHOLDERS
+void M_IO_cin(M_Array* const input){
+    M_PANIC("Unimplemented!");
+}
+M_Status M_FileIO_loadfile(M_Array* const path, M_Array* const output){
+    M_PANIC("Unimplemented!");  
+    return M_STATUS_COMPILER_ERROR;
+}
+M_Status M_FileIO_cwd(M_Array* const path){
+    M_PANIC("Unimplemented!");  
+    return M_STATUS_COMPILER_ERROR;
+}
+M_Status M_FileIO_chdir(M_Array* const path){
+    M_PANIC("Unimplemented!");  
+    return M_STATUS_COMPILER_ERROR;
+}
+void M_File_join_path(M_Array* const output, const M_Array* const parent, const M_Array* const child){
+    M_PANIC("Unimplemented!");  
+}
+#endif

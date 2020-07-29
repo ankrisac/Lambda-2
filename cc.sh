@@ -7,7 +7,13 @@ case $1 in
     run)
         make build && ./.bin/main
     ;;
+    release)
+        make $1 && ./.bin/release
+    ;;
     debug)
-        make debug
+        make $1
+    ;;
+    web)
+        make $1
     ;;
 esac

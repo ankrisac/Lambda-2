@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <title> λ5 compiler </title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,900;1,200;1,300;1,400;1,500;1,600;1,700;1,900&display=swap" rel="stylesheet"> 
+  <link rel='stylesheet' href='style.css'>
+</head>
+<body>
+  <div id='header'> Lambda 5 </div>
+  <div id='editor_container'>
+    <div id='editor'>
+      <div id='editor_out'></div>
+      <div id='editor_in' 
+        contenteditable='true' 
+        autocapitalize='false' autocorrect='false'
+        spellcheck='false' data-gramm='false'></div>
+    </div>  
+  </div>
+  <div id='editor_err'></div>
+  
+  <script>
+    "use_script";
+
+    var Module = {
+      preRun: [],
+      postRun: [],
+      print: (text) => {
+        console.log(text);
+      },
+      printErr: (text) => {
+        console.error(text);
+      },
+      totalDependencies: 0,
+      onRuntimeInitialized: () => {
+        console.log("INITIALIZED");
+        let Compiler = {
+          init: Module.cwrap('M_Server_init', null, []),
+          quit: Module.cwrap('M_Server_quit', null, []),
+          parse: Module.cwrap('M_Server_parse', null, ['string']),
+          color: Module.cwrap('M_Server_color_HTML', 'string', []),
+          error: Module.cwrap('M_Server_get_errors', 'string', []),
+          print_tree: Module.cwrap('M_Server_print_tree', null, []),
+        };
+        Compiler.init();
+        
+        let editor_in = document.getElementById('editor_in');
+        let editor_out = document.getElementById('editor_out');
+        let editor_err = document.getElementById('editor_err');
+
+        function editor_update(){
+          try{
+            let inp = editor_in.innerHTML;
+            inp = inp.replaceAll(/<br>\s*<\/div>/g, '\n');
+            inp = inp.replaceAll(/<\/div>/g, '\n');
+            inp = inp.replaceAll(/<div>/g, '');
+            inp = inp.replaceAll(/<[^>]*>/g, '');
+            inp = inp.replaceAll('&gt;', '>');
+            inp = inp.replaceAll('&lt;', '<');
+            
+            Compiler.parse(inp);
+            editor_out.innerHTML = Compiler.color();
+            editor_err.innerHTML = Compiler.error();
+
+            Compiler.print_tree();
+          }
+          catch(ex){
+            console.log("ERRORS: ", ex);
+          }
+        };
+        editor_in.onkeydown = (e) => {
+          let keyCode = e.keyCode || e.which;
+
+          if(e.keyCode == 9){
+            e.preventDefault();
+
+            let sel = window.getSelection();
+            var range = sel.getRangeAt(0);
+
+            var tabNode = document.createTextNode("    ");
+            range.insertNode(tabNode);
+
+            range.setStartAfter(tabNode);
+            range.setEndAfter(tabNode); 
+            sel.removeAllRanges();
+            sel.addRange(range);
+          }
+          
+          editor_update();
+        };
+
+        editor_in.oninput = editor_update;
+      }
+    }
+  </script>
+  <script async type="text/javascript" src="compiler.js"></script>
+</body>
+</html>

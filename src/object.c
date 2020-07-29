@@ -30,6 +30,7 @@ void M_Status_print(const M_Status error){
         case M_STATUS_TYPE_MISMATCH:    printf("Type mismatch");    break;
         case M_STATUS_ARITY_MISMATCH:   printf("Arity mismatch");   break;
         case M_STATUS_COMPILER_ERROR:   printf("Compiler error");   break;
+        case M_STATUS_PARSE_ERROR:      printf("Parse error");      break;
         case M_STATUS_DIVISION_BY_ZERO: printf("Division by zero"); break;
         case M_STATUS_OUT_OF_RANGE:     printf("Out of range");     break;
         case M_STATUS_FILE_ERROR:       printf("File error");       break;

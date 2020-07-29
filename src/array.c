@@ -174,7 +174,7 @@ void M_Array_print(const M_Array* const self){
                     M_Keyword_print(self->data_keyword[i]);
                     printf(", ");
                 }
-                M_Keyword_print(self->data_type[self->len - 1]);
+                M_Keyword_print(self->data_keyword[self->len - 1]);
             }
             printf("]");
             break;
@@ -385,7 +385,7 @@ M_Status M_Array_get(M_Array* const self, const M_Int i, M_Object* const obj){
     obj->type = self->type;
     switch(self->type){
         case M_TYPE_TYPE:       obj->v_type = self->data_type[i];       break;
-        case M_TYPE_KEYWORD:    obj->v_keyword = self->data_type[i];    break;
+        case M_TYPE_KEYWORD:    obj->v_keyword = self->data_keyword[i]; break;
         case M_TYPE_SYMBOL:     obj->v_symbol = self->data_symbol[i];   break;
 
         case M_TYPE_BOOL:       obj->v_bool = self->data_bool[i];       break;
@@ -414,7 +414,7 @@ M_Status M_Array_set(M_Array* const self, const M_Int i, const M_Object* const o
 
     switch(self->type){
         case M_TYPE_TYPE:       self->data_type[i] =    obj->v_type;    break;
-        case M_TYPE_KEYWORD:    self->data_type[i] =    obj->v_keyword; break;
+        case M_TYPE_KEYWORD:    self->data_keyword[i] = obj->v_keyword; break;
         case M_TYPE_SYMBOL:     self->data_symbol[i] =  obj->v_symbol;  break;
 
         case M_TYPE_BOOL:       self->data_bool[i] =    obj->v_bool;    break;

@@ -8,14 +8,6 @@
 #include <assert.h>
 #include <string.h>
 
-#ifdef __linux__
-#include "unistd.h"
-#include <linux/limits.h>
-#else
-#error NON LINUX PLATFORMS NOT SUPPORTED YET
-#endif
-
-
 void M_Init();
 void M_Quit();
 
@@ -235,3 +227,5 @@ void* M_realloc(void* ptr, const size_t len, size_t obj_size);
 #include "io.h"
 #include "error.h"
 #include "module.h"
+#include "parser_atomic.h"
+#include "parser_group.h"
