@@ -23,7 +23,7 @@ void M_CompilerJS_parse(const char* in_str){
     M_Lint_parse(&linter, inp);
 }
 char* M_CompilerJS_color_HTML(){
-    M_Str str = M_Lint_color_HTML(&linter);
+    M_Str str = M_Lint_HTML(&linter.tree);
     M_Str_push(&str, '\0');
     return str.data_char;
 }
@@ -34,7 +34,7 @@ char* M_CompilerJS_get_errors(){
 }
 
 void M_CompilerJS_test(){
-    char input[] = "x = R#\"hello\"\"#;";
+    char input[] = "x = R#\"hello\"#;";
 
     M_ErrorStack_revert(&linter.err_stack, 0);
 

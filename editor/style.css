@@ -108,7 +108,7 @@ body{
     display: inline;
 }
 .syntax_error{ 
-    border-bottom: 2px red white;
+    border-bottom: 2px red;
     color: red; 
     font-weight: bold;
     display: inline
@@ -121,10 +121,24 @@ body{
     color: #22FFFF;
     display: inline 
 }
-.syntax_string{ 
+
+.syntax_string_rawquote{ 
+    color: #00408a;
+    display: inline
+}
+.syntax_string_quote{ 
+    color: #037895;
+    display: inline
+}
+.syntax_string_escape{ 
+    color: #ad00bd;
+    display: inline
+}
+.syntax_string_inner{ 
     color: #22882B;
     display: inline
 }
+
 .syntax_number{
     color: #8855FF; 
     display: inline
