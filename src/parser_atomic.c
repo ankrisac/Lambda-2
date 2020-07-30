@@ -177,39 +177,45 @@ M_Object M_Module_parse_String(M_Module_Pos* const pos, M_SymbolTable* const tab
             break;
     }
 
+    M_Str str;
+    M_Array_init(&str, M_TYPE_CHAR, 8);
+
     size_t escape_count = 0;
     while(M_Module_Pos_peek(pos) == '#'){
         M_Module_Pos_next(pos);
         escape_count++;
     }
 
-    if(M_Module_Pos_peek(pos) != '"' || !M_Module_Pos_next(pos)){ 
-        return out;
-    }            
+    if(M_Module_Pos_peek(pos) != '"'){
+        M_Str error;
+        M_Str_from_cstr(&error, 
+            "Expected opening delimiter " M_COLOR "\"" M_RESET 
+            " of " M_COLOR "string" M_RESET);
+        M_ErrorStack_pushLocStrMsg(err_trace, *pos, error);
+        return M_Module_wrap_String(table, &str, *pos);    
+    }
 
-    M_Str str;
     char chr;
-
-    M_Array_init(&str, M_TYPE_CHAR, 8);
-    do {    
+    while(M_Module_Pos_next(pos)){
         switch((chr = M_Module_Pos_peek(pos))){
             case '"': { 
                 M_Str_push(&str, chr);        
+                M_Module_Pos_next(pos);
                 size_t i;
 
-                for(i = 0; i < escape_count && M_Module_Pos_next(pos); i++) {
-                    M_Str_push(&str, (chr = M_Module_Pos_peek(pos)));
-                    if(chr != '#') {
+                for(i = 0; i < escape_count; i++) {
+                    char chr = M_Module_Pos_peek(pos);
+                    if(M_Module_Pos_peek(pos) != '#'){
                         break;
                     }
+                    M_Str_push(&str, chr);
+                    M_Module_Pos_next(pos);
                 } 
-
                 if(i == escape_count){ 
                     M_Array_dropn(&str, escape_count + 1);
-                    
-                    M_Module_Pos_next(pos);
                     return M_Module_wrap_String(table, &str, *pos);
                 }
+                M_Module_Pos_prev(pos);
                 break;
             }
             case '\\': 
@@ -236,7 +242,7 @@ M_Object M_Module_parse_String(M_Module_Pos* const pos, M_SymbolTable* const tab
                 M_Str_push(&str, chr);
                 break;
         }
-    } while(M_Module_Pos_next(pos));        
+    }        
      
     if(str.data_char[str.len - 1] == '\0'){
         M_Array_drop(&str);

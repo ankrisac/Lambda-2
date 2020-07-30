@@ -1,3 +1,4 @@
+#pragma once
 #include "core.h"
 
 void M_Str_push(M_Str* const self, const char val);

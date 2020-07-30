@@ -11,6 +11,10 @@
 void M_Init();
 void M_Quit();
 
+void* M_calloc(const size_t len, size_t obj_size);
+void* M_malloc(const size_t len, size_t obj_size);
+void* M_realloc(void* ptr, const size_t len, size_t obj_size);
+
 typedef enum {
     M_TYPE_TYPE,
     M_TYPE_KEYWORD,
@@ -198,10 +202,13 @@ struct M_Object{
     M_Type type;
 };
 
+typedef struct{
+    M_ErrorStack err_stack;
+    M_SymbolTable symtable;
+    M_Object tree;
+    M_Module module;
+}M_Lint;
 
-void* M_calloc(const size_t len, size_t obj_size);
-void* M_malloc(const size_t len, size_t obj_size);
-void* M_realloc(void* ptr, const size_t len, size_t obj_size);
 
 #define M_PANIC(MSG)\
     printf("CompilerError: Unreachable situation in %s:" MSG, __func__)
@@ -229,3 +236,4 @@ void* M_realloc(void* ptr, const size_t len, size_t obj_size);
 #include "module.h"
 #include "parser_atomic.h"
 #include "parser_group.h"
+#include "lint.h"

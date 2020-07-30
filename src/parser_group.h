@@ -1,3 +1,4 @@
+#pragma once
 #include "core.h"
 
 M_Object M_Module_parse_FuncExpr(M_Module_Pos* const pos, M_SymbolTable* const table, M_ErrorStack* const err_trace);

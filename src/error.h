@@ -1,3 +1,4 @@
+#pragma once
 #include "core.h"
 
 void M_ErrorStack_init(M_ErrorStack* const self);

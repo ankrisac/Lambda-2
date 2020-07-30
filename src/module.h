@@ -8,6 +8,7 @@
 #define M_ITALIC "\033[3m"
 #else
 #define M_RESET "</div>"
+#define M_UNDERLINE "<div class='syntax_underline'>"
 #define M_COLOR "<div class='syntax_error'>"
 #define M_ITALIC "<div class='syntax_italic'>"
 #endif

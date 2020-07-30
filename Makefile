@@ -17,9 +17,9 @@ release: $(SOURCE) $(HEADER)
 debug: $(SOURCE) $(HEADER)
 	@gcc -g $(FLAGS) $(SOURCE) -o .bin/debug
 
-EMCC_EXPORT="_M_Server_init", "_M_Server_quit", "_M_Server_parse", "_M_Server_color_HTML", "_M_Server_get_errors", "_M_Server_print_tree"
+EMCC_EXPORT="_M_CompilerJS_init", "_M_CompilerJS_quit", "_M_CompilerJS_parse", "_M_CompilerJS_color_HTML", "_M_CompilerJS_get_errors", "_M_CompilerJS_print_tree"
 EMCC_FLAGS=-s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' -s ALLOW_MEMORY_GROWTH=1
 
 .PHONY: web
 web: $(SOURCE) $(HEADER)
-	@emcc $(SOURCE) -o editor/compiler.js -s EXPORTED_FUNCTIONS='[$(EMCC_EXPORT)]' $(EMCC_FLAGS)
+	@emcc $(SOURCE) -o editor/.bin/compiler.js -s EXPORTED_FUNCTIONS='[$(EMCC_EXPORT)]' $(EMCC_FLAGS)
