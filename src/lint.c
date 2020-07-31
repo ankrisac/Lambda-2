@@ -2,7 +2,7 @@
 
 void M_Lint_HTML_append(M_Str* const output, char chr){
     switch(chr){
-        case '\n': M_Str_join_cstr(output, "<br><div class='syntax_newline'></div>"); break;
+        case '\n': M_Str_join_cstr(output, "<br/>"); break;
         case '&': M_Str_join_cstr(output, "&amp;"); break;
         case '<': M_Str_join_cstr(output, "&lt;"); break;
         case '>': M_Str_join_cstr(output, "&gt;"); break;

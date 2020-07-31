@@ -22,4 +22,4 @@ EMCC_FLAGS=-s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' -s ALLOW_MEMORY
 
 .PHONY: web
 web: $(SOURCE) $(HEADER)
-	@emcc $(SOURCE) -o editor/.bin/compiler.js -s EXPORTED_FUNCTIONS='[$(EMCC_EXPORT)]' $(EMCC_FLAGS)
+	@emcc $(SOURCE) -o docs/editor/bin/compiler.js -s EXPORTED_FUNCTIONS='[$(EMCC_EXPORT)]' $(EMCC_FLAGS)

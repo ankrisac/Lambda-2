@@ -80,6 +80,7 @@ body{
 #editor_in{    
     background: transparent;
     color: transparent;
+    border-style: none;
 
     caret-color: red;
 }
@@ -146,4 +147,7 @@ body{
 .syntax_expr{ 
     color: white; 
     display: inline;
+}
+.syntax_newline{
+    clear: clear;
 }
