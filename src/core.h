@@ -205,9 +205,14 @@ struct M_Object{
 typedef struct{
     M_ErrorStack err_stack;
     M_SymbolTable symtable;
+    
     M_Object tree;
     M_Module module;
-}M_Lint;
+
+    M_Array style_stack;
+    M_Str input;
+    M_Str output;
+}M_JSLint;
 
 
 #define M_PANIC(MSG)\
@@ -220,20 +225,22 @@ typedef struct{
 
 
 
-#include "object.h"
-#include "symbol.h"
+#include "type-arc/object.h"
+#include "type-arc/symbol.h"
 
-#include "array.h"
-#include "str.h"
-#include "expr.h"
+#include "type-arc/array.h"
+#include "type-arc/str.h"
+#include "type-arc/expr.h"
 
-#include "tuple.h"
-#include "struct.h"
+#include "type-arc/tuple.h"
+#include "type-arc/struct.h"
+
 #include "stack.h"
 
 #include "io.h"
 #include "error.h"
-#include "module.h"
-#include "parser_atomic.h"
-#include "parser_group.h"
+
+#include "parser/module.h"
+#include "parser/atomic.h"
+#include "parser/group.h"
 #include "lint.h"

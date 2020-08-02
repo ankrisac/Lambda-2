@@ -1,79 +1,71 @@
 #include "lint.h"
 
-void M_Lint_HTML_append(M_Str* const output, char chr){
+void M_JSLint_append(M_JSLint* const self, char chr){
     switch(chr){
-        case '\n': M_Str_join_cstr(output, "<br/>"); break;
-        case '&': M_Str_join_cstr(output, "&amp;"); break;
-        case '<': M_Str_join_cstr(output, "&lt;"); break;
-        case '>': M_Str_join_cstr(output, "&gt;"); break;
-        default: M_Str_push(output, chr); break;
+        case '\n': 
+            for(size_t i = 0; i < self->style_stack.len; i++){    
+                M_Str_join_cstr(&self->output, "</div>");
+            }
+
+            M_Str_join_cstr(&self->output, "</div><br><div class='editor_line'>"); 
+            
+            for(size_t i = 0; i < self->style_stack.len; i++){
+                M_Str_join_cstr(&self->output, "<div class='syntax_");
+                M_Str_join(&self->output, &self->style_stack.data_arc[i]->v_array);  
+                M_Str_join_cstr(&self->output, "'>");
+            }
+            break;
+        case '&': M_Str_join_cstr(&self->output, "&amp;"); break;
+        case '<': M_Str_join_cstr(&self->output, "&lt;"); break;
+        case '>': M_Str_join_cstr(&self->output, "&gt;"); break;
+        default: M_Str_push(&self->output, chr); break;
     }
 }
 
-void M_Lint_HTML_openTag(M_Str* const output, const char* style){
-    M_Str_join_cstr(output, "<div class='syntax_");
-    M_Str_join_cstr(output, style);  
-    M_Str_join_cstr(output, "'>");
+void M_JSLint_openTag(M_JSLint* const self, const char* style){
+    M_Str style_str;
+    M_Str_from_cstr(&style_str, style); 
+    __M_Array_push_Array(&self->style_stack, &style_str);
+    M_Array_clear(&style_str);
+
+    M_Str_join_cstr(&self->output, "<div class='syntax_");
+    M_Str_join_cstr(&self->output, style);  
+    M_Str_join_cstr(&self->output, "'>");
 }
-void M_Lint_HTML_closeTag(M_Str* const output){
-    M_Str_join_cstr(output, "</div>");   
+void M_JSLint_closeTag(M_JSLint* const self){    
+    M_Str_join_cstr(&self->output, "</div>");
+    M_Array_drop(&self->style_stack);
 }
-void M_Lint_HTML_applystyle(M_Str* const output, const M_Str* const input, const char* style, size_t* iter, const size_t end){
-    M_Lint_HTML_openTag(output, style);
+void M_JSLint_applystyle(M_JSLint* const self, const char* style, size_t* iter, const size_t end){
+    M_JSLint_openTag(self, style);
     size_t i = *iter;
     for(; i < end; i++){
-        M_Lint_HTML_append(output, input->data_char[i]);
+        M_JSLint_append(self, self->input.data_char[i]);
     }
     *iter = i;
-    M_Lint_HTML_closeTag(output);
+    M_JSLint_closeTag(self);
 }
 
-void M_Lint_HTML_Symbol(M_Str* const output, const M_Str* const input, size_t* iter, const M_Module_Pos elem_pos){
-    M_Lint_HTML_applystyle(output, input, "symbol", iter, elem_pos.end);
+void M_JSLint_color_Symbol(M_JSLint* const self, const M_Object* const obj, size_t* iter, const M_Module_Pos elem_pos){
+    if(obj->v_symbol == M_Symbol_from_cstr(&self->symtable, "def")){
+        M_JSLint_applystyle(self, "keyword", iter, elem_pos.end);
+    }
+    else{
+        M_JSLint_applystyle(self, "symbol", iter, elem_pos.end);
+    }
 }
-void M_Lint_HTML_Operator(M_Str* const output, const M_Str* const input, size_t* iter, const M_Module_Pos elem_pos){
-    M_Lint_HTML_applystyle(output, input, "operator", iter, elem_pos.end);
+void M_JSLint_color_Operator(M_JSLint* const self, size_t* iter, const M_Module_Pos elem_pos){
+    M_JSLint_applystyle(self, "operator", iter, elem_pos.end);
 }
-void M_Lint_HTML_RawString(const M_Object* const obj, M_Str* const output, const M_Str* const input, size_t* iter, const M_Module_Pos* elem_pos){
+void M_JSLint_color_String(M_JSLint* const self, const M_Object* const obj, size_t* iter, const M_Module_Pos* elem_pos, bool raw){
     size_t i = *iter;
     size_t end = elem_pos->end;
 
     char chr;
-    M_Lint_HTML_openTag(output, "string_rawquote");
+    M_JSLint_openTag(self, "string_quote");
     for(; i < end; ++i){
-        chr = input->data_char[i];
-        M_Lint_HTML_append(output, chr);
-
-        if(chr == '"'){
-            i++;
-            break;
-        }
-    }
-    size_t len = i + obj->v_symbol->data.len;
-    len = (len > end) ? end : len;
-
-    M_Lint_HTML_openTag(output, "string_inner");
-    for(;i < len; ++i){
-        M_Lint_HTML_append(output, input->data_char[i]);
-    }
-    M_Lint_HTML_closeTag(output);
-
-    for(; i < end; ++i){
-        M_Lint_HTML_append(output, input->data_char[i]);
-    }
-    *iter = i;
-
-    M_Lint_HTML_closeTag(output);
-}
-void M_Lint_HTML_String(const M_Object* const obj, M_Str* const output, const M_Str* const input, size_t* iter, const M_Module_Pos* elem_pos){
-    size_t i = *iter;
-    size_t end = elem_pos->end;
-
-    char chr;
-    M_Lint_HTML_openTag(output, "string_rawquote");
-    for(; i < end; ++i){
-        chr = input->data_char[i];
-        M_Lint_HTML_append(output, chr);
+        chr = self->input.data_char[i];
+        M_JSLint_append(self, chr);
 
         if(chr == '"'){
             i++;
@@ -84,73 +76,67 @@ void M_Lint_HTML_String(const M_Object* const obj, M_Str* const output, const M_
     len = (len > end) ? end : len;
 
     chr = '\0';
-    M_Lint_HTML_openTag(output, "string_inner");
+    M_JSLint_openTag(self, "string_inner");
     for(;i < len; ++i){
-        chr = input->data_char[i];
+        chr = self->input.data_char[i];
 
-        if(chr == '\\'){
-            M_Lint_HTML_openTag(output, "string_escape");
-            M_Lint_HTML_append(output, chr);
+        if(!raw && chr == '\\'){
+            M_JSLint_openTag(self, "string_escape");
+            M_JSLint_append(self, chr);
             
             len++;
 
             if(++i < len){
-                chr = input->data_char[i];
-                M_Lint_HTML_append(output, chr);
+                chr = self->input.data_char[i];
+                M_JSLint_append(self, chr);
             }
-            M_Lint_HTML_closeTag(output);
+            M_JSLint_closeTag(self);
         }
         else{
-            M_Lint_HTML_append(output, chr);
+            M_JSLint_append(self, chr);
         }
     }
-    M_Lint_HTML_closeTag(output);
+    M_JSLint_closeTag(self);
 
     for(; i < end; ++i){
-        M_Lint_HTML_append(output, input->data_char[i]);
+        M_JSLint_append(self, self->input.data_char[i]);
     }
     *iter = i;
 
-    M_Lint_HTML_closeTag(output);
+    M_JSLint_closeTag(self);
 }
-void M_Lint_HTML_Var(const M_Object* const obj, M_Str* const str, const M_Str* const in, size_t* pos, const M_Module_Pos elem_pos){
-    switch(in->data_char[*pos]){
+void M_JSLint_color_Var(M_JSLint* const self, const M_Object* const obj, size_t* pos, const M_Module_Pos elem_pos){
+    switch(self->input.data_char[*pos]){
         case 'r':
         case 'R':
             if(*pos + 1 < elem_pos.end){
-                switch(in->data_char[*pos + 1]){
+                switch(self->input.data_char[*pos + 1]){
                     case '#':
                     case '"':
-                        M_Lint_HTML_RawString(obj, str, in, pos, &elem_pos);
+                        M_JSLint_color_String(self, obj, pos, &elem_pos, true);
                         break;
                     default:
-                        M_Lint_HTML_Symbol(str, in, pos, elem_pos);
+                        M_JSLint_color_Symbol(self, obj, pos, elem_pos);
                         break;
                 }
             }
             else{
-                M_Lint_HTML_Symbol(str, in, pos, elem_pos);
+                M_JSLint_color_Symbol(self, obj, pos, elem_pos);
             }
             break;
         case '#':
-        case '"':
-            M_Lint_HTML_String(obj, str, in, pos, &elem_pos);
-            break;
-        M_CASE_OPERATOR
-            M_Lint_HTML_Operator(str, in, pos, elem_pos);
-            break;
-        default:              
-            M_Lint_HTML_Symbol(str, in, pos, elem_pos);
-            break;
+        case '"':       M_JSLint_color_String(self, obj, pos, &elem_pos, false);    break;
+        M_CASE_OPERATOR M_JSLint_color_Operator(self, pos, elem_pos);               break;
+        default:        M_JSLint_color_Symbol(self, obj, pos, elem_pos);                 break;
     }
 }
-void M_Lint_HTML_expr(const M_Expr* const tree, M_Str* const str, const M_Str* const in, size_t* pos){
+void M_JSLint_color_Expr(M_JSLint* const self, const M_Expr* const tree, size_t* pos){
     for(size_t i = 0; i < tree->len; i++){
         const M_Object elem = tree->data[i];
         const M_Module_Pos elem_pos = tree->pos[i];
 
         for(; *pos < elem_pos.begin; (*pos)++){
-            M_Lint_HTML_append(str, in->data_char[*pos]);
+            M_JSLint_append(self, self->input.data_char[*pos]);
         }
 
         if(elem_pos.begin >= elem_pos.end){
@@ -162,15 +148,15 @@ void M_Lint_HTML_expr(const M_Expr* const tree, M_Str* const str, const M_Str* c
                 break;
             case M_TYPE_INT:
             case M_TYPE_FLOAT:
-                M_Lint_HTML_applystyle(str, in, "number", pos, elem_pos.end);
+                M_JSLint_applystyle(self, "number", pos, elem_pos.end);
                 break;
             case M_TYPE_SYMBOL:
-                M_Lint_HTML_Var(&elem, str, in, pos, elem_pos);
+                M_JSLint_color_Var(self, &elem, pos, elem_pos);
                 break;
             case M_TYPE_EXPR:
-                M_Lint_HTML_openTag(str, "expr");
-                M_Lint_HTML_expr(&elem.arc->v_expr, str, in, pos);
-                M_Lint_HTML_closeTag(str);
+                M_JSLint_openTag(self, "expr");
+                M_JSLint_color_Expr(self, &elem.arc->v_expr, pos);
+                M_JSLint_closeTag(self);
                 break;
             default:
                 M_PANIC_TYPE(elem.type, "")
@@ -178,36 +164,38 @@ void M_Lint_HTML_expr(const M_Expr* const tree, M_Str* const str, const M_Str* c
         }
     }
 }
-M_Str M_Lint_HTML(const M_Object* const tree){
-    M_Str str;
-    M_Array_init(&str, M_TYPE_CHAR, 16);
+M_Str M_JSLint_color(M_JSLint* const self){
+    M_Str_from_cstr(&self->output, "<div class='editor_line'>");
+    const M_Object tree = self->tree;
 
-    if(tree->type == M_TYPE_EXPR && tree->arc->v_expr.len > 0){
-        const M_Expr expr = tree->arc->v_expr;
+    if(tree.type == M_TYPE_EXPR && tree.arc->v_expr.len > 0){
+        const M_Expr expr = tree.arc->v_expr;
         size_t i = 0;
         M_Module_Pos pos = expr.pos[0];
-        M_Array in = pos.module->data;
+        self->input = pos.module->data;
 
-        M_Lint_HTML_expr(&expr, &str, &in, &i);
+        M_JSLint_color_Expr(self, &expr, &i);
 
-        for(; i < in.len; i++){
-            M_Lint_HTML_append(&str, in.data_char[i]);
+        for(; i < self->input.len; i++){
+            M_JSLint_append(self, self->input.data_char[i]);
         }
     }
-    return str;
+    M_Str_join_cstr(&self->output, "</div>");
+    return self->output;
 }
 
-void M_Lint_init(M_Lint* const self){
+void M_JSLint_init(M_JSLint* const self){
     M_SymbolTable_init(&self->symtable);
     M_ErrorStack_init(&self->err_stack);
     M_Object_set_none(&self->tree);
+    M_Array_init(&self->style_stack, M_TYPE_ARRAY, 1);
 
     M_Array_init(&self->module.path, M_TYPE_CHAR, 1);
     M_Array_init(&self->module.data, M_TYPE_CHAR, 1);
 
     printf("=== Lambda-5 ===\n");
 }
-void M_Lint_parse(M_Lint* const self, M_Str input){
+void M_JSLint_parse(M_JSLint* const self, M_Str input){
     M_ErrorStack_revert(&self->err_stack, 0);
 
     M_Array_clear(&self->module.path);
@@ -220,15 +208,14 @@ void M_Lint_parse(M_Lint* const self, M_Str input){
     M_Object_clear(&self->tree);
     self->tree = M_Module_parse_File(&pos, &self->symtable, &self->err_stack);
 }
-M_Str M_Lint_color_HTML(M_Lint* const self){
-    return M_Lint_HTML(&self->tree);
-}
-M_Str M_Lint_get_errors(M_Lint* const self){
+M_Str M_JSLint_get_errors(M_JSLint* const self){
     return M_ErrorStack_toStr(&self->err_stack);
 }
-void M_Lint_clear(M_Lint* const self){
+void M_JSLint_clear(M_JSLint* const self){
     M_SymbolTable_clear(&self->symtable);
     M_ErrorStack_clear(&self->err_stack);
     M_Object_clear(&self->tree);
     M_Module_clear(&self->module);
+
+    M_Array_clear(&self->style_stack);
 }

@@ -1,5 +1,5 @@
 #pragma once
-#include "core.h"
+#include "../core.h"
 
 #ifdef __linux__
 #define M_UNDERLINE "\033[4m"

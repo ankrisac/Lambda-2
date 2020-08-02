@@ -1,4 +1,4 @@
-#include "parser_atomic.h"
+#include "atomic.h"
 
 M_Float M_Module_parse_Frac(M_Module_Pos* const pos){
     M_Float frac = 0, exp = 1.0;

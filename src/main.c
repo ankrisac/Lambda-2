@@ -1,14 +1,13 @@
 #define _GNU_SOURCE
 #include "core.h"
-#include "module.h"
 
-M_Lint linter;
+M_JSLint linter;
 
 void M_CompilerJS_init(){
-    M_Lint_init(&linter);
+    M_JSLint_init(&linter);
 }
 void M_CompilerJS_quit(){
-    M_Lint_clear(&linter);
+    M_JSLint_clear(&linter);
 }
 
 void M_CompilerJS_print_tree(){
@@ -20,15 +19,15 @@ void M_CompilerJS_print_tree(){
 void M_CompilerJS_parse(const char* in_str){
     M_Str inp;
     M_Str_from_cstr(&inp, in_str);
-    M_Lint_parse(&linter, inp);
+    M_JSLint_parse(&linter, inp);
 }
 char* M_CompilerJS_color_HTML(){
-    M_Str str = M_Lint_HTML(&linter.tree);
+    M_Str str = M_JSLint_color(&linter);
     M_Str_push(&str, '\0');
     return str.data_char;
 }
 char* M_CompilerJS_get_errors(){
-    M_Str str = M_Lint_get_errors(&linter);
+    M_Str str = M_JSLint_get_errors(&linter);
     M_Str_push(&str, '\0');
     return str.data_char;
 }

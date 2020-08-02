@@ -1,4 +1,4 @@
-#include "parser_group.h"
+#include "group.h"
 
 M_Object M_Module_wrap_FuncExpr(M_Expr expr){    
     M_Object out;
@@ -351,21 +351,24 @@ M_Object M_Module_parse_File(M_Module_Pos* const pos, M_SymbolTable* const table
         if(iter.begin == iter.end){
             M_ErrorStack_revert(err_trace, error_count);
         }
-        
+
+        M_Module_Pos sync_iter = iter;
+
         do {
-            char chr = M_Module_Pos_peek(&iter);
+            char chr = M_Module_Pos_peek(&sync_iter);
 
             if(chr == ';'){
-                M_Module_Pos_next(&iter);
+                M_Module_Pos_next(&sync_iter);
+                iter = sync_iter;
                 break;
             }
             if(chr == '\0'){
                 M_ErrorStack_pushLocMsg(err_trace, iter, 
                     "Expected terminator " M_COLOR ";" M_RESET
                     " after " M_COLOR "expr" M_RESET);                        
-                M_Module_Pos_advance(pos, &iter);
+                M_Module_Pos_advance(pos, &sync_iter);
                 return M_Module_wrap_List(expr);
             }
-        } while(M_Module_Pos_next(&iter));
+        } while(M_Module_Pos_next(&sync_iter));
     }
 }

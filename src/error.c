@@ -8,7 +8,7 @@ void M_ErrorStack_clear(M_ErrorStack* const self){
 }
 void M_ErrorStack_delete(M_ErrorStack* const self){
     M_ErrorStack_clear(self);
-    free(self);
+    free(self);  
 }
 
 void M_ErrorStack_push(M_ErrorStack* const self, M_Str* const str){

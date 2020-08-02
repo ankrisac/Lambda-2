@@ -1,5 +1,5 @@
 #pragma once
-#include "core.h"
+#include "../core.h"
 
 M_Float M_Module_parse_Frac(M_Module_Pos* const pos);
 M_Object M_Module_parse_Number(M_Module_Pos* const pos, M_ErrorStack* const err_trace);

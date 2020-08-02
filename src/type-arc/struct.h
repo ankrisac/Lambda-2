@@ -1,5 +1,5 @@
 #pragma once
-#include "core.h"
+#include "../core.h"
 
 void M_Struct_init(M_Struct* const self, const size_t len);
 M_Struct M_Struct_new(const size_t len);

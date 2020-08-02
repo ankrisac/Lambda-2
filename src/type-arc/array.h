@@ -1,5 +1,5 @@
 #pragma once
-#include "core.h"
+#include "../core.h"
 
 void __M_Array_alloc(M_Array* const self, const size_t len);
 void __M_Array_realloc(M_Array* const self, const size_t len);

@@ -1,5 +1,5 @@
 #pragma once
-#include "core.h"
+#include "../core.h"
 
 void M_Status_print(const M_Status error);
 void M_Type_print(const M_Type type);

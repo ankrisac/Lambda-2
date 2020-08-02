@@ -1,5 +1,5 @@
 #pragma once
-#include "core.h"
+#include "../core.h"
 
 void __M_Tuple_alloc(M_Tuple* const self, const size_t len);
 void __M_Tuple_realloc(M_Tuple* const self, const size_t len);

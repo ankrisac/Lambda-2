@@ -40,7 +40,8 @@ var Module = {
                         .replace(/^[^<>]+/, m => m + '\n')
                         .replace(/<\/div>/g, '\n')
                         .replace(/<[^>]*>/g, '')
-                        .replace(/&gt/g, '>').replace(/&lt/g, '<')
+                        .replace(/&gt;/g, '>').replace(/&lt;/g, '<')
+                        .replace(/\n$/, '')
                 );
                 
                 editor_out.innerHTML = Compiler.color();
@@ -71,5 +72,6 @@ var Module = {
         };
 
         editor_in.oninput = editor_update;
+        editor_update();
     }
 }

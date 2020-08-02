@@ -1,5 +1,5 @@
 #pragma once
-#include "core.h"
+#include "../core.h"
 
 void __M_Expr_alloc(M_Expr* const self, const size_t len);
 void __M_Expr_realloc(M_Expr* const self, const size_t len);

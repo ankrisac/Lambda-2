@@ -1,5 +1,5 @@
 #pragma once
-#include "core.h"
+#include "../core.h"
 
 void M_SymbolTable_init(M_SymbolTable* const self);
 void M_SymbolTable_clear(M_SymbolTable* const self);
